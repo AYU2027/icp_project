@@ -1,0 +1,27 @@
+{
+  "canisters": {
+    "health_exchange_backend": {
+      "candid": "src/health_exchange_backend/health_exchange_backend.did",
+      "package": "health_exchange_backend",
+      "type": "rust"
+    },
+    "health_exchange_frontend": {
+      "dependencies": [
+        "health_exchange_backend"
+      ],
+      "source": [
+        "src/health_exchange_frontend/dist"
+      ],
+      "type": "assets",
+      "workspace": "health_exchange_frontend"
+    }
+  },
+  "defaults": {
+    "build": {
+      "args": "",
+      "packtool": ""
+    }
+  },
+  "output_env_file": ".env",
+  "version": 1
+}
