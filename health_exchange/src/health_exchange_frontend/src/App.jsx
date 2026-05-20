@@ -1,50 +1,68 @@
-import { useState } from 'react';
-import { health_exchange_backend } from 'declarations/health_exchange_backend';
+import { useState, useEffect } from "react";
+import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
+import { AuthClient } from "@dfinity/auth-client";
+
+import Background from "./components/Background";
+import Navbar from "./components/Navbar";
+import Landing from "./views/Landing";
+import PatientDashboard from "./views/PatientDashboard";
 
 function App() {
-  const [name, setName] = useState('');
-  const [greeting, setGreeting] = useState('');
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [principal, setPrincipal] = useState("");
+  const [authClient, setAuthClient] = useState(null);
+  const [isInitializing, setIsInitializing] = useState(true);
 
-  // This function calls your Rust Smart Contract!
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!name) return;
-    
-    // Calls the default 'greet' function in your Rust backend
-    const result = await health_exchange_backend.greet(name);
-    setGreeting(result);
-  };
+  // Check if user is already logged in when they visit the site
+  useEffect(() => {
+    AuthClient.create().then(async (client) => {
+      setAuthClient(client);
+      const _isAuthenticated = await client.isAuthenticated();
+      if (_isAuthenticated) {
+        setPrincipal(client.getIdentity().getPrincipal().toText());
+        setIsLoggedIn(true);
+      }
+      setIsInitializing(false); // Finished checking
+    });
+  }, []);
+
+  if (isInitializing) return null; // Prevents UI flicker while checking auth
 
   return (
-    <div className="min-h-screen bg-slate-900 flex flex-col items-center justify-center p-4">
-      <div className="bg-slate-800 p-8 rounded-xl shadow-2xl max-w-md w-full text-center">
-        <h1 className="text-3xl font-extrabold text-teal-400 mb-6">
-          ICP Health Vault
-        </h1>
+    <Router>
+      <div className="min-h-screen flex flex-col relative overflow-hidden">
+        <Background />
+        <Navbar />
         
-        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-          <input 
-            type="text" 
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="Enter your name to test Rust..."
-            className="px-4 py-3 rounded bg-slate-700 text-white border border-slate-600 focus:outline-none focus:border-teal-400"
-          />
-          <button 
-            type="submit" 
-            className="bg-teal-500 hover:bg-teal-400 text-slate-900 px-4 py-3 rounded font-bold transition-colors"
-          >
-            Call Rust Backend
-          </button>
-        </form>
-
-        {greeting && (
-          <div className="mt-6 p-4 bg-slate-700 rounded-lg text-teal-300 font-medium text-lg border border-slate-600">
-            {greeting}
-          </div>
-        )}
+        <main className="container mx-auto flex-grow z-10">
+          <Routes>
+            {/* Landing Route */}
+            <Route 
+              path="/" 
+              element={
+                !isLoggedIn ? (
+                  <Landing authClient={authClient} setIsLoggedIn={setIsLoggedIn} setPrincipal={setPrincipal} />
+                ) : (
+                  <Navigate to="/dashboard" replace /> /* Auto-redirect if already logged in */
+                )
+              } 
+            />
+            
+            {/* Protected Dashboard Route */}
+            <Route 
+              path="/dashboard" 
+              element={
+                isLoggedIn ? (
+                  <PatientDashboard principal={principal} authClient={authClient} setIsLoggedIn={setIsLoggedIn} />
+                ) : (
+                  <Navigate to="/" replace /> /* Auto-kick to landing if not logged in */
+                )
+              } 
+            />
+          </Routes>
+        </main>
       </div>
-    </div>
+    </Router>
   );
 }
 

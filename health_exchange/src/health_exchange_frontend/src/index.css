@@ -1,1 +1,64 @@
 @import "tailwindcss";
+
+/* ===== CUSTOM SCROLLBAR ===== */
+* { scrollbar-width: thin; scrollbar-color: #A3A3A3 #F5F5F5; }
+.dark * { scrollbar-color: #52525B #18181B; }
+::-webkit-scrollbar { width: 12px; }
+::-webkit-scrollbar-track { background: #F5F5F5; }
+.dark ::-webkit-scrollbar-track { background: #18181B; }
+::-webkit-scrollbar-thumb { background-color: #A3A3A3; border-radius: 20px; border: 3px solid #F5F5F5; }
+.dark ::-webkit-scrollbar-thumb { background-color: #52525B; border: 3px solid #18181B; }
+
+/* ===== BACKGROUND ELEMENTS ===== */
+.gradient-bg {
+    background: linear-gradient(-45deg, #ee7752, #e73c7e, #23a6d5, #23d5ab);
+    background-size: 400% 400%;
+    animation: gradient 15s ease infinite;
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -3;
+}
+@keyframes gradient { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
+
+/* Light/Dark Theme Opacity */
+html:not(.dark) .gradient-bg { opacity: 0.1; }
+html.dark .gradient-bg { opacity: 0.15; }
+
+/* Floating Blobs */
+@keyframes float {
+    0% { transform: translate(0, 0) rotate(0deg); }
+    25% { transform: translate(20px, 40px) rotate(45deg); }
+    50% { transform: translate(-30px, -10px) rotate(90deg); }
+    75% { transform: translate(10px, -30px) rotate(135deg); }
+    100% { transform: translate(0, 0) rotate(0deg); }
+}
+@keyframes float2 {
+    0% { transform: translate(0, 0) rotate(0deg); }
+    25% { transform: translate(-30px, 20px) rotate(-45deg); }
+    50% { transform: translate(10px, -40px) rotate(-90deg); }
+    75% { transform: translate(20px, 10px) rotate(-135deg); }
+    100% { transform: translate(0, 0) rotate(-0deg); }
+}
+
+.blob {
+    position: fixed; z-index: -2; filter: blur(80px); border-radius: 50%;
+}
+.blob1 { background: #23a6d5; width: 300px; height: 300px; top: -50px; left: -50px; animation: float 25s infinite ease-in-out; }
+.blob2 { background: #e73c7e; width: 250px; height: 250px; bottom: -80px; right: -80px; animation: float2 30s infinite ease-in-out; }
+
+html:not(.dark) .blob { opacity: 0.4; }
+html.dark .blob { opacity: 0.6; }
+
+/* Noise Overlay */
+.noise-overlay { 
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; 
+    background-image: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADIAAAAyCAMAAAAp4XiDAAAAUVBMVEWFhYWDg4N3d3dtbW17e3t1dXWBgYGHh4d5eXlzc3OLi4ubm5uVlZWPj4+NjY19fX2JiYl/f39ra2uRkZGZmZlpaWmXl5dvb29xcXGTk5NnZ2c8TV1mAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAIGNIUk0AAHolAACAgwAA+f8AAIDpAAB1MAAA6mAAADqYAAAXb5JfxUYAAABnSURBVEjHqfYxDsMwCARb5f9/uz80SpwymA9dPaBPBdE2w1jbm/MyARGkJ9UJEdDu+M5JcbfgIFySjMNJOKe4pSIn3A1wKc+KbqFNSoXEiYfa1A+pA/pIOqwT7M+2OYj2trAZp9m+EtT+WaSo9mAdeaD9AZF+rm9An5iJjOkEwZAAAAAElFTkSuQmCC); 
+    opacity: 0.03; 
+}
+
+/* Animations */
+.aurora-btn { position: relative; overflow: hidden; }
+.aurora-btn::before {
+    content: ''; position: absolute; top: 0; left: 0; width: 200%; height: 100%;
+    background: linear-gradient(115deg, transparent 40%, rgba(255, 255, 255, 0.5) 50%, transparent 60%);
+    transform: translateX(-100%); transition: transform 0.6s ease;
+}
+.aurora-btn:hover::before { transform: translateX(100%); }
