@@ -1,8 +1,7 @@
 # 🧬 HealthVault: Decentralized Medical Records
 
-![HealthVault Landing Page](<img width="1920" height="1080" alt="Screenshot 2026-05-28 125850" src="https://github.com/user-attachments/assets/c82ed5ad-26e7-4ddf-8b45-fd3529539879" />
-)
-*(Note: Replace `./assets/landing.png` with the actual path to your screenshot)*
+<img width="1920" height="1080" alt="Screenshot 2026-05-28 125850" src="https://github.com/user-attachments/assets/da9fc641-30f0-4278-bd84-cf3de9498140" />
+
 
 ## 📖 Overview
 HealthVault is a next-generation, Web3-powered healthcare platform built on the **Internet Computer (ICP)**. It revolutionizes medical data ownership by putting patients in complete control of their encrypted health records while allowing medical researchers to query and request access to vital anonymized data securely.
