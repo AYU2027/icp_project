@@ -7,15 +7,18 @@ import Landing from "./views/Landing";
 import PatientDashboard from "./views/PatientDashboard";
 import ResearcherDashboard from "./views/ResearcherDashboard"; 
 
+// 1. Import these so App.jsx can query the blockchain on refresh
+import { idlFactory } from "declarations/health_exchange_backend/health_exchange_backend.did.js";
+import { Actor, HttpAgent } from "@dfinity/agent";
+
 function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [principal, setPrincipal] = useState("");
   const [authClient, setAuthClient] = useState(null);
   const [isInitializing, setIsInitializing] = useState(true);
   
-
   const [userRole, setUserRole] = useState(null); 
-
+  const [isCheckingRole, setIsCheckingRole] = useState(false); // New state to prevent UI flicker
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -37,19 +40,59 @@ function App() {
     checkAuth();
   }, []);
 
-  
+  // 2. The Auto-Router Logic
   useEffect(() => {
-    if (!isLoggedIn) {
-      setUserRole(null);
-    }
-  }, [isLoggedIn]);
+    const autoRouteAuthenticatedUser = async () => {
+      if (isLoggedIn && principal && authClient) {
+        setIsCheckingRole(true);
+        try {
+          const LOCAL_CANISTER_ID = "uxrrr-q7777-77774-qaaaq-cai";
+          const agent = new HttpAgent({
+            identity: authClient.getIdentity(),
+            host: "https://cuddly-eureka-4jvwv499grg73j5pp-4943.app.github.dev",
+          });
+          
+          await agent.fetchRootKey().catch(console.error);
+          
+          const backend = Actor.createActor(idlFactory, {
+            agent,
+            canisterId: LOCAL_CANISTER_ID,
+          });
+
+          // Check if they already exist in the database
+          const result = await backend.get_profile(principal);
+          if (result.Ok) {
+            // Extracts "Patient" or "Researcher" from the Rust Enum object { Patient: null }
+            const detectedRole = Object.keys(result.Ok.role)[0];
+            setUserRole(detectedRole); 
+          }
+        } catch (err) {
+          console.error("Auto-routing lookup failure:", err);
+        } finally {
+          setIsCheckingRole(false);
+        }
+      } else {
+        setUserRole(null);
+      }
+    };
+
+    autoRouteAuthenticatedUser();
+  }, [isLoggedIn, principal, authClient]);
 
   if (isInitializing) return null; 
 
- 
   const renderDashboardContent = () => {
+    // Show a small loader while checking the blockchain to prevent showing the role buttons prematurely
+    if (isCheckingRole) {
+      return (
+        <div className="flex flex-col items-center justify-center min-h-[70vh] z-10 relative">
+           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-500 mb-4"></div>
+           <p className="text-neutral-500 dark:text-neutral-400">Verifying decentralized identity...</p>
+        </div>
+      );
+    }
+
     if (!userRole) {
-      
       return (
         <div className="flex flex-col items-center justify-center min-h-[70vh] p-6 relative z-10">
           <div className="bg-white/80 dark:bg-zinc-800/80 backdrop-blur-md p-10 rounded-2xl shadow-xl max-w-lg w-full text-center border border-neutral-200 dark:border-zinc-700">
@@ -91,23 +134,21 @@ function App() {
     <Router>
       <div className="min-h-screen flex flex-col relative overflow-hidden">
         <Background />
-        <Navbar />
+        <Navbar isLoggedIn={isLoggedIn} authClient={authClient} setIsLoggedIn={setIsLoggedIn} />
         
         <main className="container mx-auto flex-grow z-10 relative">
           <Routes>
-            {/* Landing Route (Untouched logic!) */}
             <Route 
               path="/" 
               element={
                 !isLoggedIn ? (
                   <Landing authClient={authClient} setIsLoggedIn={setIsLoggedIn} setPrincipal={setPrincipal} />
                 ) : (
-                  <Navigate to="/dashboard" replace /> /* Auto-redirect if already logged in */
+                  <Navigate to="/dashboard" replace />
                 )
               } 
             />
             
-            {/* Protected Dashboard Route */}
             <Route 
               path="/dashboard" 
               element={

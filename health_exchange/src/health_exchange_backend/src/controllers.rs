@@ -50,6 +50,7 @@ pub fn get_all_patients_anonymized_logic() -> Vec<UserProfile> {
                 diseases: profile.diseases.clone(),
                 authorized_viewers: vec![], 
                 notifications: vec![], 
+                medical_scans: vec![],
             })
             .collect()
     })
@@ -97,4 +98,43 @@ pub fn get_full_patient_data_logic(patient_id: String) -> Result<UserProfile, St
             Err("Patient not found".to_string())
         }
     })
+}
+
+// --- UPGRADE 1: Add a Medical Scan URL ---
+pub fn add_medical_scan_logic(scan_url: String) -> Result<(), String> {
+    let caller = ic_cdk::api::msg_caller().to_text();
+    
+    USER_PROFILES.with(|p| {
+        let mut profiles = p.borrow_mut();
+        if let Some(mut profile) = profiles.get(&caller) {
+            profile.medical_scans.push(scan_url);
+            profiles.insert(caller, profile);
+            Ok(())
+        } else {
+            Err("Patient profile not found".to_string())
+        }
+    })
+}
+
+// --- UPGRADE 2: Privacy-Preserving Eligibility Query (ZKP-style) ---
+pub fn check_eligibility_logic(min_age: u32, disease_keyword: String) -> Vec<String> {
+    let mut eligible_anonymous_ids = Vec::new();
+    
+    USER_PROFILES.with(|p| {
+        let profiles = p.borrow();
+        for (principal, profile) in profiles.iter() {
+            // Only check Patient profiles
+            if let UserRole::Patient = profile.role {
+                let has_disease = profile.diseases.to_lowercase().contains(&disease_keyword.to_lowercase());
+                let meets_age = profile.age >= min_age;
+                
+                // If they match, return ONLY their anonymous Principal ID, nothing else!
+                if has_disease && meets_age {
+                    eligible_anonymous_ids.push(principal.clone());
+                }
+            }
+        }
+    });
+    
+    eligible_anonymous_ids
 }

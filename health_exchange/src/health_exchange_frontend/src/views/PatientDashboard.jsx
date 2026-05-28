@@ -1,7 +1,5 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-
-
 import { idlFactory } from "declarations/health_exchange_backend/health_exchange_backend.did.js";
 import { Actor, HttpAgent } from "@dfinity/agent";
 
@@ -15,28 +13,29 @@ export default function PatientDashboard({ principal, authClient, setIsLoggedIn 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isUpdatingAccess, setIsUpdatingAccess] = useState(false);
 
-  
-  const getAuthenticatedBackend = () => {
-    const LIVE_CANISTER_ID = "zydb5-siaaa-aaaab-qacba-cai";
+  const getAuthenticatedBackend = async () => {
+    const LOCAL_CANISTER_ID = "uxrrr-q7777-77774-qaaaq-cai";
     const identity = authClient.getIdentity();
 
-   
     const agent = new HttpAgent({
       identity: identity,
-      host: "https://icp-api.io",
+      host: "https://cuddly-eureka-4jvwv499grg73j5pp-4943.app.github.dev",
     });
 
-  
+    // Await root key to prevent signature verification errors
+    await agent.fetchRootKey().catch(console.error);
+
     return Actor.createActor(idlFactory, {
       agent: agent,
-      canisterId: LIVE_CANISTER_ID,
+      canisterId: LOCAL_CANISTER_ID,
     });
   };
 
   useEffect(() => {
     const fetchProfile = async () => {
+      if (!principal || principal === "2vxsx-fae") return; // Skip if anonymous generic key
       try {
-        const backend = getAuthenticatedBackend(); // Note: No 'await' needed here now
+        const backend = await getAuthenticatedBackend();
         const result = await backend.get_profile(principal);
 
         if (result.Ok) {
@@ -55,7 +54,7 @@ export default function PatientDashboard({ principal, authClient, setIsLoggedIn 
     e.preventDefault();
     setIsSubmitting(true);
     try {
-      const backend = getAuthenticatedBackend(); // Note: No 'await' needed here now
+      const backend = await getAuthenticatedBackend();
 
       const profileData = {
         role: { Patient: null },
@@ -64,6 +63,7 @@ export default function PatientDashboard({ principal, authClient, setIsLoggedIn 
         diseases: formData.diseases,
         authorized_viewers: [],
         notifications: [],
+        medical_scans: [], // Aligns with the updated backend structure
       };
 
       const result = await backend.save_profile(profileData);
@@ -74,7 +74,7 @@ export default function PatientDashboard({ principal, authClient, setIsLoggedIn 
       }
 
       setProfile(profileData);
-      alert("Profile saved successfully!");
+      alert("Profile registered successfully!");
     } catch (error) {
       console.error("Full Error:", error);
       alert("Blockchain Error: " + error.message);
@@ -86,7 +86,7 @@ export default function PatientDashboard({ principal, authClient, setIsLoggedIn 
   const handleGrantAccess = async (researcherPrincipalString) => {
     setIsUpdatingAccess(true);
     try {
-      const backend = getAuthenticatedBackend(); // Note: No 'await' needed here now
+      const backend = await getAuthenticatedBackend();
       const result = await backend.grant_access(researcherPrincipalString);
 
       if (result.Err) {
@@ -100,7 +100,7 @@ export default function PatientDashboard({ principal, authClient, setIsLoggedIn 
       }
     } catch (err) {
       console.error("Error granting access:", err);
-      alert("Failed to grant access. Check console for details.");
+      alert("Failed to grant access.");
     } finally {
       setIsUpdatingAccess(false);
     }
@@ -115,98 +115,123 @@ export default function PatientDashboard({ principal, authClient, setIsLoggedIn 
   };
 
   return (
-    <div className="py-12 z-10 relative px-6">
-      <div className="max-w-5xl mx-auto">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-10 gap-4">
+    <div className="py-12 z-10 relative px-6 text-zinc-900 dark:text-zinc-100">
+      <div className="max-w-4xl mx-auto">
+        
+        {/* TOP BAR */}
+        <div className="flex justify-between items-center mb-8 pb-6 border-b border-zinc-200 dark:border-zinc-800">
           <div>
-            <h1 className="text-3xl font-extrabold text-neutral-900 dark:text-white">My Health Vault</h1>
-            <p className="text-neutral-600 dark:text-neutral-400 mt-1">Your data is encrypted and secured by ICP.</p>
+            <h1 className="text-2xl font-bold tracking-tight">Patient Secure Space</h1>
+            <p className="text-sm text-zinc-500 dark:text-zinc-400">Manage your immutable medical ledger entries.</p>
           </div>
-          <button onClick={handleLogout} className="px-4 py-2 bg-red-500/10 hover:bg-red-500/20 text-red-600 dark:text-red-400 rounded-lg font-medium transition-colors border border-red-500/20">
-            Secure Logout
-          </button>
-        </div>
-
-        <div className="bg-white/50 dark:bg-zinc-800/50 backdrop-blur-md border border-neutral-200 dark:border-zinc-700 rounded-2xl p-6 shadow-sm mb-8">
-          <h2 className="text-sm font-bold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider mb-2">Your Web3 Identity</h2>
-          <code className="text-xs sm:text-sm text-blue-600 dark:text-teal-400 break-all">{principal}</code>
+          <div className="flex items-center gap-4">
+            <div className="bg-zinc-100 dark:bg-zinc-900 px-3 py-1.5 rounded-full border border-zinc-200 dark:border-zinc-800 flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+              <span className="text-xs font-mono text-zinc-500">{principal.substring(0, 7)}...</span>
+            </div>
+          
+          </div>
         </div>
 
         {isLoading ? (
-          <div className="text-center py-12 text-neutral-500 animate-pulse font-medium">Decrypting blockchain records...</div>
+          <div className="text-center py-20 text-sm text-zinc-400 animate-pulse">Synchronizing ledger keys...</div>
         ) : profile ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="bg-white/50 dark:bg-zinc-800/50 backdrop-blur-md border border-teal-500/30 rounded-2xl p-8 shadow-sm relative overflow-hidden">
-              <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-teal-400 to-blue-500"></div>
-              <h3 className="text-xl font-bold text-neutral-900 dark:text-white mb-6">Medical Profile</h3>
-              <div className="space-y-4">
-                <div>
-                  <p className="text-xs text-neutral-500 uppercase tracking-wider">Full Name</p>
-                  <p className="text-lg font-medium text-neutral-800 dark:text-neutral-200">{profile.name}</p>
+          /* DASHBOARD VIEW FOR REFRESHES */
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="md:col-span-2 space-y-6">
+              <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-6 shadow-sm">
+                <h2 className="text-lg font-semibold mb-4">Core Medical File</h2>
+                <div className="space-y-4">
+                  <div>
+                    <span className="text-xs uppercase font-bold tracking-wider text-zinc-400">Declared Identifier</span>
+                    <p className="text-base font-medium mt-0.5">{profile.name}</p>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <span className="text-xs uppercase font-bold tracking-wider text-zinc-400">Age Bracket</span>
+                      <p className="text-base font-medium mt-0.5">{profile.age} years</p>
+                    </div>
+                    <div>
+                      <span className="text-xs uppercase font-bold tracking-wider text-zinc-400">Classification</span>
+                      <p className="text-base font-medium mt-0.5">{profile.diseases}</p>
+                    </div>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-xs text-neutral-500 uppercase tracking-wider">Age</p>
-                  <p className="text-lg font-medium text-neutral-800 dark:text-neutral-200">{profile.age} years old</p>
-                </div>
-                <div>
-                  <p className="text-xs text-neutral-500 uppercase tracking-wider">Known Diseases</p>
-                  <p className="text-lg font-medium text-neutral-800 dark:text-neutral-200">{profile.diseases}</p>
+              </div>
+
+              {/* PDF & REPORT STORAGE HOLDER */}
+              <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-6 shadow-sm">
+                <h2 className="text-lg font-semibold mb-2">Encrypted Document Vault</h2>
+                <p className="text-xs text-zinc-400 mb-4">Upload and attach verified radiology reports or clinical summaries.</p>
+                <div className="border-2 border-dashed border-zinc-200 dark:border-zinc-800 rounded-lg p-8 text-center bg-zinc-50/50 dark:bg-zinc-950/30">
+                  <span className="text-2xl block mb-2">📄</span>
+                  <button className="text-xs bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 px-3 py-2 rounded-md font-semibold mb-1">
+                    Select Medical PDF
+                  </button>
+                  <p className="text-[10px] text-zinc-400">Maximum size allowance: 2MB</p>
                 </div>
               </div>
             </div>
 
-            <div className="flex flex-col gap-6">
-              <div className="bg-white/50 dark:bg-zinc-800/50 backdrop-blur-md border border-purple-500/30 rounded-2xl p-6 shadow-sm">
-                <h3 className="text-xl font-bold text-purple-700 dark:text-purple-400 mb-4">📬 Data Requests</h3>
+            {/* REQUESTS COLUMN */}
+            <div className="space-y-6">
+              <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-6 shadow-sm">
+                <h3 className="font-semibold text-sm uppercase tracking-wider text-purple-600 dark:text-purple-400 mb-4">Pending Handshakes</h3>
                 {profile.notifications && profile.notifications.length > 0 ? (
-                  <ul className="space-y-3">
-                    {profile.notifications.map((note, index) => (
-                      <li key={index} className="p-3 bg-purple-50 dark:bg-purple-900/20 rounded-md border border-purple-100 dark:border-purple-800 flex flex-col gap-2">
-                        <div>
-                          <p className="text-xs text-neutral-500 dark:text-neutral-400 truncate"><strong>From:</strong> {note.researcher_id}</p>
-                          <p className="text-sm font-medium text-neutral-800 dark:text-neutral-200 mt-1">"{note.message}"</p>
-                          <span className="text-xs font-bold text-yellow-700 bg-yellow-100 dark:text-yellow-400 dark:bg-yellow-900/30 px-2 py-1 rounded mt-2 inline-block">
-                            {note.status}
-                          </span>
-                        </div>
-                        <div className="flex gap-2 mt-2">
-                          <button 
-                            onClick={() => handleGrantAccess(note.researcher_id)}
-                            disabled={note.status === "Approved" || isUpdatingAccess}
-                            className="flex-1 bg-green-500 hover:bg-green-600 text-white px-3 py-1.5 rounded text-sm font-bold transition disabled:opacity-50 disabled:cursor-not-allowed"
-                          >
-                            {note.status === "Approved" ? "Access Granted" : "Approve"}
-                          </button>
-                        </div>
-                      </li>
+                  <div className="space-y-3">
+                    {profile.notifications.map((note, idx) => (
+                      <div key={idx} className="p-3 bg-zinc-50 dark:bg-zinc-950 rounded-lg border border-zinc-200 dark:border-zinc-800 text-xs">
+                        <p className="text-zinc-400 truncate">🔬 {note.researcher_id}</p>
+                        <p className="font-medium my-1.5">"{note.message}"</p>
+                        <button
+                          onClick={() => handleGrantAccess(note.researcher_id)}
+                          disabled={note.status === "Approved" || isUpdatingAccess}
+                          className="w-full text-center bg-emerald-600 hover:bg-emerald-500 text-white py-1 rounded font-medium transition disabled:opacity-40"
+                        >
+                          {note.status === "Approved" ? "Access Clear" : "Grant Authorization"}
+                        </button>
+                      </div>
                     ))}
-                  </ul>
-                ) : (
-                  <div className="p-4 bg-neutral-100 dark:bg-zinc-900/50 rounded-lg border border-dashed border-neutral-300 dark:border-zinc-700 text-center text-sm text-neutral-500">
-                    No pending data requests from researchers.
                   </div>
+                ) : (
+                  <p className="text-xs text-zinc-400 italic text-center py-4">No active connection requests found.</p>
                 )}
               </div>
             </div>
           </div>
         ) : (
-          <div className="bg-white/50 dark:bg-zinc-800/50 backdrop-blur-md border border-neutral-200 dark:border-zinc-700 rounded-2xl p-8 shadow-sm max-w-2xl mx-auto">
-            <h3 className="text-2xl font-bold text-neutral-900 dark:text-white mb-2 text-center">Initialize Your Vault</h3>
-            <form onSubmit={handleSubmit} className="space-y-6 mt-6">
+          /* REGISTRATION ONBOARDING FLOW */
+          <div className="max-w-md mx-auto bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-6 shadow-md">
+            <div className="text-center mb-6">
+              <h2 className="text-xl font-bold">Register Vault Profile</h2>
+              <p className="text-xs text-zinc-400 mt-1">Initialize your records to configure network indexing values.</p>
+            </div>
+
+            <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">Full Name</label>
-                <input required type="text" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} className="w-full px-4 py-3 rounded-lg bg-white dark:bg-zinc-900 border border-neutral-300 dark:border-zinc-700 focus:ring-2 focus:ring-teal-500 outline-none" />
+                <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-400 mb-1">Full Name Alias</label>
+                <input required type="text" placeholder="e.g. Patient Alpha" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} className="w-full px-3 py-2 text-sm bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-lg outline-none focus:border-teal-500" />
               </div>
+              
               <div>
-                <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">Age</label>
-                <input required type="number" min="0" max="120" value={formData.age} onChange={(e) => setFormData({...formData, age: e.target.value})} className="w-full px-4 py-3 rounded-lg bg-white dark:bg-zinc-900 border border-neutral-300 dark:border-zinc-700 focus:ring-2 focus:ring-teal-500 outline-none" />
+                <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-400 mb-1">Age Matrix</label>
+                <input required type="number" min="0" max="120" placeholder="Years" value={formData.age} onChange={(e) => setFormData({...formData, age: e.target.value})} className="w-full px-3 py-2 text-sm bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-lg outline-none focus:border-teal-500" />
               </div>
+
               <div>
-                <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">Current/Past Diseases</label>
-                <input required type="text" placeholder="e.g. Asthma, Type 2 Diabetes" value={formData.diseases} onChange={(e) => setFormData({...formData, diseases: e.target.value})} className="w-full px-4 py-3 rounded-lg bg-white dark:bg-zinc-900 border border-neutral-300 dark:border-zinc-700 focus:ring-2 focus:ring-teal-500 outline-none" />
+                <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-400 mb-1">Condition Metric Dropdown</label>
+                <select required value={formData.diseases} onChange={(e) => setFormData({...formData, diseases: e.target.value})} className="w-full px-3 py-2 text-sm bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-lg outline-none focus:border-teal-500">
+                  <option value="" disabled>Choose categorization profile...</option>
+                  <option value="Healthy / Control Group">Healthy / Control Group</option>
+                  <option value="Asthma">Asthma</option>
+                  <option value="Type 2 Diabetes">Type 2 Diabetes</option>
+                  <option value="Hypertension">Hypertension</option>
+                  <option value="Autoimmune Condition">Autoimmune Condition</option>
+                </select>
               </div>
-              <button disabled={isSubmitting} type="submit" className="w-full py-4 bg-gradient-to-r from-blue-600 to-teal-500 text-white rounded-lg font-bold transition-all disabled:opacity-50">
-                {isSubmitting ? "Saving..." : "Save Medical Record"}
+
+              <button disabled={isSubmitting} type="submit" className="w-full bg-teal-600 hover:bg-teal-500 text-white font-semibold py-2.5 rounded-lg text-sm transition shadow-sm disabled:opacity-50 mt-2">
+                {isSubmitting ? "Writing Block..." : "Finalize Registry"}
               </button>
             </form>
           </div>

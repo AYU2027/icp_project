@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { createActor } from "declarations/health_exchange_backend";
+import { idlFactory } from "declarations/health_exchange_backend/health_exchange_backend.did.js";
+import { Actor, HttpAgent } from "@dfinity/agent";
 
 export default function ResearcherDashboard({ principal, authClient, setIsLoggedIn }) {
   const navigate = useNavigate();
@@ -15,22 +16,35 @@ export default function ResearcherDashboard({ principal, authClient, setIsLogged
   const [fullProfileView, setFullProfileView] = useState(null);
   const [isViewing, setIsViewing] = useState(false);
 
+  // --- ORACLE STATE ---
+  const [oracleAge, setOracleAge] = useState(18);
+  const [oracleDisease, setOracleDisease] = useState("");
+  const [oracleResults, setOracleResults] = useState(null);
+  const [isCheckingOracle, setIsCheckingOracle] = useState(false);
+
+  // ✅ FIX: Made this an async function again!
   const getAuthenticatedBackend = async () => {
-    const identity = authClient.getIdentity();
-    const LIVE_CANISTER_ID = "zydb5-siaaa-aaaab-qacba-cai";
-
-    return createActor(LIVE_CANISTER_ID, {
-      agentOptions: {
+      const LOCAL_CANISTER_ID = "uxrrr-q7777-77774-qaaaq-cai"; 
+      const identity = authClient.getIdentity();
+  
+      const agent = new HttpAgent({
         identity: identity,
-        host: "https://icp-api.io", 
-      },
-    });
-  };
-
+        host: "https://cuddly-eureka-4jvwv499grg73j5pp-4943.app.github.dev", // Ensure no trailing slash here!
+      });
+  
+      // ✅ FIX: We MUST await this so the certificate downloads BEFORE the query fires!
+      await agent.fetchRootKey().catch(console.error);
+      
+      return Actor.createActor(idlFactory, {
+        agent: agent,
+        canisterId: LOCAL_CANISTER_ID,
+      });
+    };
+    
   useEffect(() => {
     const fetchAnonymizedData = async () => {
       try {
-        const backend = await getAuthenticatedBackend();
+        const backend = await getAuthenticatedBackend(); 
         const result = await backend.get_all_patients_anonymized();
         setPatients(result);
       } catch (error) {
@@ -40,13 +54,13 @@ export default function ResearcherDashboard({ principal, authClient, setIsLogged
       }
     };
     fetchAnonymizedData();
-  }, []);
+  }, [authClient]);
 
   const handleSendRequest = async (e) => {
     e.preventDefault();
     setIsSending(true);
     try {
-      const backend = await getAuthenticatedBackend();
+      const backend = await getAuthenticatedBackend(); 
       const result = await backend.request_access(requestingId, requestMessage);
       
       if (result.Err) {
@@ -66,7 +80,7 @@ export default function ResearcherDashboard({ principal, authClient, setIsLogged
   const handleViewFullData = async (patientId) => {
     setIsViewing(true);
     try {
-      const backend = await getAuthenticatedBackend();
+      const backend = await getAuthenticatedBackend(); 
       const result = await backend.get_full_patient_data(patientId);
       
       if (result.Err) {
@@ -81,6 +95,22 @@ export default function ResearcherDashboard({ principal, authClient, setIsLogged
     }
   };
 
+  // --- ORACLE FUNCTION ---
+  const handleCheckEligibility = async (e) => {
+    e.preventDefault();
+    setIsCheckingOracle(true);
+    try {
+      const backend = await getAuthenticatedBackend(); 
+      const results = await backend.check_eligibility(parseInt(oracleAge, 10), oracleDisease);
+      setOracleResults(results);
+    } catch (error) {
+      console.error("Oracle Error:", error);
+      alert("Failed to query the Privacy Oracle.");
+    } finally {
+      setIsCheckingOracle(false);
+    }
+  };
+
   const handleLogout = async () => {
     if (authClient) {
       await authClient.logout();
@@ -89,31 +119,78 @@ export default function ResearcherDashboard({ principal, authClient, setIsLogged
     }
   };
 
-  return (
-    <div className="py-12 z-10 relative px-6">
+return (
+    
+    <div className="px-6 text-zinc-900 dark:text-zinc-100">
       <div className="max-w-6xl mx-auto">
         
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-10 gap-4">
+        {/* Adjusted spacing to match the new Navbar flow */}
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
           <div>
             <h1 className="text-3xl font-extrabold text-neutral-900 dark:text-white">Researcher Portal</h1>
             <p className="text-neutral-600 dark:text-neutral-400 mt-1">Explore anonymized global health data and request study access.</p>
           </div>
-          <button onClick={handleLogout} className="px-4 py-2 bg-red-500/10 hover:bg-red-500/20 text-red-600 dark:text-red-400 rounded-lg font-medium transition-colors border border-red-500/20">
-            Secure Logout
-          </button>
+        
         </div>
+
+        
+        <div className="bg-gradient-to-br from-purple-900/40 to-indigo-900/40 backdrop-blur-md border border-purple-500/30 rounded-2xl p-6 shadow-lg mb-8">
+          <div className="flex items-center gap-3 mb-4">
+            <span className="text-2xl"></span>
+            <div>
+              <h3 className="text-xl font-bold text-white">search the patient registry</h3>
+              <p className="text-sm text-purple-200"></p>
+            </div>
+          </div>
+
+          <form onSubmit={handleCheckEligibility} className="flex flex-col md:flex-row gap-4 mb-6">
+            <div className="flex-1">
+              <label className="block text-xs font-bold text-purple-300 uppercase tracking-wider mb-1">Minimum Age</label>
+              <input type="number" required min="0" value={oracleAge} onChange={(e) => setOracleAge(e.target.value)} className="w-full px-4 py-2 rounded-lg bg-black/30 border border-purple-500/50 text-white focus:outline-none focus:border-purple-300" />
+            </div>
+            <div className="flex-1">
+              <label className="block text-xs font-bold text-purple-300 uppercase tracking-wider mb-1">Required Disease/Condition</label>
+              <input type="text" required placeholder="e.g., Asthma" value={oracleDisease} onChange={(e) => setOracleDisease(e.target.value)} className="w-full px-4 py-2 rounded-lg bg-black/30 border border-purple-500/50 text-white focus:outline-none focus:border-purple-300" />
+            </div>
+            <div className="flex items-end">
+              <button disabled={isCheckingOracle} type="submit" className="w-full md:w-auto px-6 py-2 bg-purple-600 hover:bg-purple-500 text-white font-bold rounded-lg transition disabled:opacity-50">
+                {isCheckingOracle ? "Querying Network..." : "Run Oracle"}
+              </button>
+            </div>
+          </form>
+
+          {oracleResults && (
+            <div className="p-4 bg-black/40 rounded-lg border border-purple-500/30">
+              <p className="text-sm font-bold text-green-400 mb-2">
+                ✓ Found {oracleResults.length} eligible anonymous profiles
+              </p>
+              {oracleResults.length > 0 ? (
+                <div className="flex flex-wrap gap-2">
+                  {oracleResults.map((id, idx) => (
+                    <code key={idx} className="text-xs bg-purple-900/60 text-purple-200 px-2 py-1 rounded border border-purple-700">
+                      {id.substring(0, 15)}...
+                    </code>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-xs text-purple-300 italic">Try adjusting your parameters.</p>
+              )}
+            </div>
+          )}
+        </div>
+        {/* --- END ORACLE UI --- */}
 
         {isLoading ? (
           <div className="text-center py-12 text-neutral-500 animate-pulse font-medium">Scanning blockchain for health data...</div>
         ) : (
           <div className="bg-white/50 dark:bg-zinc-800/50 backdrop-blur-md border border-neutral-200 dark:border-zinc-700 rounded-2xl p-6 shadow-sm">
-            <h3 className="text-xl font-bold text-neutral-900 dark:text-white mb-6">Global Anonymized Patient Registry</h3>
+            <h3 className="text-xl font-bold text-neutral-900 dark:text-white mb-6"> Patient Registry</h3>
             
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse">
                 <thead>
                   <tr className="border-b border-neutral-300 dark:border-zinc-700 text-neutral-500 dark:text-neutral-400 text-sm uppercase tracking-wider">
-                    <th className="p-4 font-semibold">Patient ID (Anonymous)</th>
+                    <th className="p-4 font-semibold">Patient ID </th>
                     <th className="p-4 font-semibold">Age</th>
                     <th className="p-4 font-semibold">Known Diseases</th>
                     <th className="p-4 font-semibold text-right">Action</th>

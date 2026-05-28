@@ -33,3 +33,13 @@ fn grant_access(researcher_id: String) -> Result<(), String> {
 fn get_full_patient_data(patient_id: String) -> Result<UserProfile, String> {
     controllers::get_full_patient_data_logic(patient_id)
 }
+
+#[ic_cdk::update]
+fn add_medical_scan(scan_url: String) -> Result<(), String> {
+    controllers::add_medical_scan_logic(scan_url)
+}
+
+#[ic_cdk::query]
+fn check_eligibility(min_age: u32, disease_keyword: String) -> Vec<String> {
+    controllers::check_eligibility_logic(min_age, disease_keyword)
+}

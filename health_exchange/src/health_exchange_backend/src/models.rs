@@ -23,6 +23,7 @@ pub struct UserProfile {
     pub diseases: String,
     pub authorized_viewers: Vec<String>,
     pub notifications: Vec<Notification>,
+    pub medical_scans: Vec<String>,
 }
 
 impl Storable for UserProfile {
