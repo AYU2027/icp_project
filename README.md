@@ -44,6 +44,7 @@ Follow these steps to run the HealthVault blockchain network and React frontend 
 * [Node.js](https://nodejs.org/) (v18+)
 * [DFINITY SDK (`dfx`)](https://internetcomputer.org/docs/current/developer-docs/setup/install)
 * Rust toolchain (`rustup`)
+* aa
 
 ### 2. Start the Local Blockchain
 Open a terminal in the root directory and start the local ICP replica in the background:
