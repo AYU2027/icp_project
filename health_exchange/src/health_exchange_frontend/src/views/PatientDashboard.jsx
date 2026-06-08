@@ -33,7 +33,7 @@ export default function PatientDashboard({ principal, authClient, setIsLoggedIn 
 
   useEffect(() => {
     const fetchProfile = async () => {
-      if (!principal || principal === "2vxsx-fae") return; // Skip if anonymous generic key
+      if (!principal || principal === "2vxsx-fae") return; 
       try {
         const backend = await getAuthenticatedBackend();
         const result = await backend.get_profile(principal);
@@ -63,7 +63,7 @@ export default function PatientDashboard({ principal, authClient, setIsLoggedIn 
         diseases: formData.diseases,
         authorized_viewers: [],
         notifications: [],
-        medical_scans: [], // Aligns with the updated backend structure
+        medical_scans: [], 
       };
 
       const result = await backend.save_profile(profileData);
@@ -122,7 +122,7 @@ export default function PatientDashboard({ principal, authClient, setIsLoggedIn 
         <div className="flex justify-between items-center mb-8 pb-6 border-b border-zinc-200 dark:border-zinc-800">
           <div>
             <h1 className="text-2xl font-bold tracking-tight">Patient Secure Space</h1>
-            <p className="text-sm text-zinc-500 dark:text-zinc-400">Manage your immutable medical ledger entries.</p>
+            <p className="text-sm text-zinc-500 dark:text-zinc-400">Manage your  medical ledger entries.</p>
           </div>
           <div className="flex items-center gap-4">
             <div className="bg-zinc-100 dark:bg-zinc-900 px-3 py-1.5 rounded-full border border-zinc-200 dark:border-zinc-800 flex items-center gap-2">

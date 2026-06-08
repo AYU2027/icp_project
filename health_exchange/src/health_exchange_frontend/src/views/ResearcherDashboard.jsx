@@ -29,10 +29,10 @@ export default function ResearcherDashboard({ principal, authClient, setIsLogged
   
       const agent = new HttpAgent({
         identity: identity,
-        host: "https://cuddly-eureka-4jvwv499grg73j5pp-4943.app.github.dev", // Ensure no trailing slash here!
+        host: "https://cuddly-eureka-4jvwv499grg73j5pp-4943.app.github.dev", 
       });
   
-      // ✅ FIX: We MUST await this so the certificate downloads BEFORE the query fires!
+      
       await agent.fetchRootKey().catch(console.error);
       
       return Actor.createActor(idlFactory, {
@@ -124,7 +124,7 @@ return (
     <div className="px-6 text-zinc-900 dark:text-zinc-100">
       <div className="max-w-6xl mx-auto">
         
-        {/* Adjusted spacing to match the new Navbar flow */}
+       
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
           <div>
             <h1 className="text-3xl font-extrabold text-neutral-900 dark:text-white">Researcher Portal</h1>
@@ -154,7 +154,7 @@ return (
             </div>
             <div className="flex items-end">
               <button disabled={isCheckingOracle} type="submit" className="w-full md:w-auto px-6 py-2 bg-purple-600 hover:bg-purple-500 text-white font-bold rounded-lg transition disabled:opacity-50">
-                {isCheckingOracle ? "Querying Network..." : "Run Oracle"}
+                {isCheckingOracle ? "Querying Network..." : "Run"}
               </button>
             </div>
           </form>
@@ -271,7 +271,7 @@ return (
           </div>
         )}
 
-        {/* Floating Full Profile View Modal */}
+        
         {fullProfileView && (
           <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
             <div className="bg-white dark:bg-zinc-800 p-8 rounded-2xl shadow-xl max-w-lg w-full border border-teal-500">
