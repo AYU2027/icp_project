@@ -22,7 +22,7 @@ export default function ResearcherDashboard({ principal, authClient, setIsLogged
   const [oracleResults, setOracleResults] = useState(null);
   const [isCheckingOracle, setIsCheckingOracle] = useState(false);
 
-  // ✅ FIX: Made this an async function again!
+  
   const getAuthenticatedBackend = async () => {
       const LOCAL_CANISTER_ID = "uxrrr-q7777-77774-qaaaq-cai"; 
       const identity = authClient.getIdentity();
