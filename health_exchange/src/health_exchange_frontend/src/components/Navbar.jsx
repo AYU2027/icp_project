@@ -39,7 +39,7 @@ export default function Navbar({ isLoggedIn, authClient, setIsLoggedIn }) {
   };
 
   return (
-    // FIX: Changed from 'fixed' to 'sticky' and added 'mb-8' to push document text down!
+   
     <header className="sticky top-6 z-50 flex justify-center px-4 pointer-events-none mb-12">
       
       <nav className="pointer-events-auto flex items-center justify-between w-full max-w-6xl bg-white/50 dark:bg-black/40 backdrop-blur-3xl border border-white/40 dark:border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.08)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.4)] rounded-full px-6 py-3 transition-all duration-500 ease-out hover:bg-white/60 dark:hover:bg-black/50">
