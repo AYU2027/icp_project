@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom"; // Import the router for logout
 import logo from "./logo.png";
 
-// Pass in the authentication props!
+
 export default function Navbar({ isLoggedIn, authClient, setIsLoggedIn }) {
   const [isDark, setIsDark] = useState(true);
   const navigate = useNavigate();
@@ -29,7 +29,7 @@ export default function Navbar({ isLoggedIn, authClient, setIsLoggedIn }) {
     }
   };
 
-  // Global Logout Function
+
   const handleLogout = async () => {
     if (authClient) {
       await authClient.logout();
@@ -54,10 +54,10 @@ export default function Navbar({ isLoggedIn, authClient, setIsLoggedIn }) {
           </span>
         </div>
         
-        {/* RIGHT SIDE CONTROLS */}
+       
         <div className="flex items-center space-x-3 md:space-x-5">
           
-          {/* Network Indicator */}
+        
           <div className="hidden sm:flex items-center gap-2.5 px-4 py-1.5 bg-black/5 dark:bg-white/5 border border-black/5 dark:border-white/10 rounded-full cursor-default backdrop-blur-md">
             <span className="relative flex h-2 w-2">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-teal-400 opacity-75"></span>
@@ -80,7 +80,7 @@ export default function Navbar({ isLoggedIn, authClient, setIsLoggedIn }) {
             </div>
           </button>
 
-          {/* NEW: Global Logout Button (Only shows if logged in) */}
+         
           {isLoggedIn && (
             <button 
               onClick={handleLogout} 

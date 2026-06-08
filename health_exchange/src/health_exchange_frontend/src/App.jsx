@@ -6,6 +6,7 @@ import Navbar from "./components/Navbar";
 import Landing from "./views/Landing";
 import PatientDashboard from "./views/PatientDashboard";
 import ResearcherDashboard from "./views/ResearcherDashboard"; 
+import { ICP_HOST } from "./config.js";
 
 // 1. Import these so App.jsx can query the blockchain on refresh
 import { idlFactory } from "declarations/health_exchange_backend/health_exchange_backend.did.js";
@@ -49,7 +50,7 @@ function App() {
           const LOCAL_CANISTER_ID = "uxrrr-q7777-77774-qaaaq-cai";
           const agent = new HttpAgent({
             identity: authClient.getIdentity(),
-            host: "https://cuddly-eureka-4jvwv499grg73j5pp-4943.app.github.dev",
+            host: ICP_HOST,
           });
           
           await agent.fetchRootKey().catch(console.error);

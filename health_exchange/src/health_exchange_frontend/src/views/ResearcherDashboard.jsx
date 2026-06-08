@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { idlFactory } from "declarations/health_exchange_backend/health_exchange_backend.did.js";
 import { Actor, HttpAgent } from "@dfinity/agent";
+import { ICP_HOST } from "../config.js";
 
 export default function ResearcherDashboard({ principal, authClient, setIsLoggedIn }) {
   const navigate = useNavigate();
@@ -29,7 +30,7 @@ export default function ResearcherDashboard({ principal, authClient, setIsLogged
   
       const agent = new HttpAgent({
         identity: identity,
-        host: "https://cuddly-eureka-4jvwv499grg73j5pp-4943.app.github.dev", 
+        host: ICP_HOST, 
       });
   
       
